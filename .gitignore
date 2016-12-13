@@ -1,0 +1,6 @@
+#Project files
+*.sublime-project
+*.sublime-workspace
+
+#Generated binaries
+*.bin
