@@ -139,10 +139,9 @@ def main():
 	print_float_array( float_array_3 );
 	write_float_array( "float_array_3.bin", float_array_3 );
 
-	#TODO: Some precision error, or possibly some math error.  Need to verify.
-	print( "float_array_1 ~ float_array_2:  " + str( numpy.allclose( float_array_1, float_array_2, .0002 ) ) );
-	print( "float_array_1 ~ float_array_3:  " + str( numpy.allclose( float_array_1, float_array_3, .0002 ) ) );
-	print( "float_array_2 ~ float_array_3:  " + str( numpy.allclose( float_array_2, float_array_3, .0002 ) ) );
+	print( "float_array_1 ~ float_array_2:  " + str( numpy.allclose( float_array_1, float_array_2 ) ) );
+	print( "float_array_1 ~ float_array_3:  " + str( numpy.allclose( float_array_1, float_array_3 ) ) );
+	print( "float_array_2 ~ float_array_3:  " + str( numpy.allclose( float_array_2, float_array_3 ) ) );
 	print("");
 	print( "Have a nice day!  :)" );
 
