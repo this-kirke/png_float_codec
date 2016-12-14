@@ -12,6 +12,49 @@ def float_array_to_rgba_buffer( float_array ):
 
 	for row in range( float_array.shape[0] ):
 		for column in range( float_array.shape[1] ):
+			# Special case if float == 0.0;
+			if float_array[row][column] == 0.0:
+				rgba_buffer[row][column][0] = 0.0;
+				rgba_buffer[row][column][1] = 0.0;
+				rgba_buffer[row][column][2] = 0.0;
+				rgba_buffer[row][column][3] = 0.0;
+			else:
+				f = abs( float_array[row][column] );
+
+				sign = 0.0 if float_array[row][column] > 0.0 else 1.0;
+				exponent = math.floor( math.log( f, 2.0 ) );
+				mantissa = math.pow( 2.0, - exponent ) * f;
+
+				exponent = math.floor( math.log( f, 2.0 ) + 127.0 ) + math.floor( math.log( mantissa, 2.0 ) );
+
+				rgba_buffer[row][column][0] = 128.0 * sign + math.floor( exponent * math.pow( 2, -1.0 ) );
+				rgba_buffer[row][column][1] = 128.0 * ( exponent % 2.0 ) + math.floor( mantissa * 128.0 ) % 128.0;
+				rgba_buffer[row][column][2] = math.floor( math.floor( mantissa * math.pow( 2, 15.0) ) % math.pow( 2, 8.0 ) );
+				rgba_buffer[row][column][3] = math.floor( math.pow( 2, 23.0 ) * ( mantissa % math.pow( 2, -15.0 ) ) );
+
+	return rgba_buffer;
+
+def rgba_buffer_to_float_array( rgba_buffer ):
+	float_array = numpy.empty( (rgba_buffer.shape[0], rgba_buffer.shape[1] ) );
+
+	for row in range( float_array.shape[0] ):
+		for column in range( float_array.shape[1] ):
+			if( rgba_buffer[row][column][0] == 0.0 and rgba_buffer[row][column][1] == 0.0 and rgba_buffer[row][column][2] == 0.0 and rgba_buffer[row][column][3] == 0.0 ):
+				float_array[row][column] = 0.0;
+			else:
+				sign = 1.0 - ( 0.0 if rgba_buffer[row][column][0] < 128.0 else 1.0 ) * 2.0;
+				exponent = 2.0 * ( rgba_buffer[row][column][0] % 128.0 ) + ( 0.0 if rgba_buffer[row][column][1] < 128.0 else 1.0 ) - 127.0;
+				mantissa = 1.0 + ( ( rgba_buffer[row][column][1] % 128.0 ) * math.pow( 2.0, 16.0 ) + rgba_buffer[row][column][2] * math.pow( 2.0, 8.0 ) + rgba_buffer[row][column][3] + 23.0 ) * math.pow( 2.0, -23.0 );
+
+				float_array[row][column] = sign * math.pow( 2.0, exponent ) * mantissa;
+
+	return float_array;
+
+def float_array_to_rgba_buffer1( float_array ):
+	rgba_buffer = numpy.empty( ( float_array.shape[0], float_array.shape[1], 4 ) );
+
+	for row in range( float_array.shape[0] ):
+		for column in range( float_array.shape[1] ):
 			f = abs( float_array[row][column] );
 			sign = 0.0 if float_array[row][column] > 0.0 else 1.0;
 			exponent = math.floor( math.log( f, 2.0 ) );
@@ -31,7 +74,7 @@ def float_array_to_rgba_buffer( float_array ):
 
 	return rgba_buffer;
 
-def rgba_buffer_to_float_array( rgba_buffer ):
+def rgba_buffer_to_float_array1( rgba_buffer ):
 	float_array = numpy.empty( (rgba_buffer.shape[0], rgba_buffer.shape[1] ) );
 
 	for row in range( float_array.shape[0] ):
@@ -55,10 +98,7 @@ def generate_float_array( width, height ):
 
 	for row in range( height ):
 		for column in range( width ):
-			distance_from_center = math.sqrt( 
-				math.pow( row - ( height / 2 ), 2 ) + 
-				math.pow( column - ( width / 2 ), 2 )
-			);
+			distance_from_center = math.sqrt( math.pow( row - ( height / 2 ), 2 ) + math.pow( column - ( width / 2 ), 2 ) );
 
 			float_array[row][column] = distance_from_center / max_distance;
 
@@ -71,6 +111,15 @@ def generate_float_array1( width, height ):
 	for row in range( height ):
 		for column in range( width ):
 			float_array[row][column] = random.uniform( -25.0, 25.0 );
+
+	return float_array;
+
+def generate_float_array2( width, height ):
+	float_array = numpy.empty( ( height, width ) );
+	for row in range( height ):
+		for column in range( width ):
+			float_array[row][column] = 1.0;
+	float_array[3][2] = float( '-inf' );
 
 	return float_array;
 
@@ -124,7 +173,7 @@ def main():
 	width = 7;
 	height = 5;
 
-	float_array_1 = generate_float_array1( width, height );
+	float_array_1 = generate_float_array( width, height );
 	print_float_array( float_array_1 );
 	write_float_array( "float_array_1.bin", float_array_1 );
 
