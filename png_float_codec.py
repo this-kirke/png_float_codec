@@ -1,112 +1,12 @@
 #!/usr/bin/python
 
-import filecmp;
-import math;
 import numpy;
+from PIL import Image;
 import random;
 import struct;
-import time;
-
-def float_array_to_rgba_buffer( float_array ):
-	rgba_buffer = numpy.empty( ( float_array.shape[0], float_array.shape[1], 4 ) );
-
-	for row in range( float_array.shape[0] ):
-		for column in range( float_array.shape[1] ):
-			# Special case if float == 0.0;
-			if float_array[row][column] == 0.0:
-				rgba_buffer[row][column][0] = 0.0;
-				rgba_buffer[row][column][1] = 0.0;
-				rgba_buffer[row][column][2] = 0.0;
-				rgba_buffer[row][column][3] = 0.0;
-			else:
-				f = abs( float_array[row][column] );
-
-				sign = 0.0 if float_array[row][column] > 0.0 else 1.0;
-				exponent = math.floor( math.log( f, 2.0 ) );
-				mantissa = math.pow( 2.0, - exponent ) * f;
-
-				exponent = math.floor( math.log( f, 2.0 ) + 127.0 ) + math.floor( math.log( mantissa, 2.0 ) );
-
-				rgba_buffer[row][column][0] = 128.0 * sign + math.floor( exponent * math.pow( 2, -1.0 ) );
-				rgba_buffer[row][column][1] = 128.0 * ( exponent % 2.0 ) + math.floor( mantissa * 128.0 ) % 128.0;
-				rgba_buffer[row][column][2] = math.floor( math.floor( mantissa * math.pow( 2, 15.0) ) % math.pow( 2, 8.0 ) );
-				rgba_buffer[row][column][3] = math.floor( math.pow( 2, 23.0 ) * ( mantissa % math.pow( 2, -15.0 ) ) );
-
-	return rgba_buffer;
-
-def rgba_buffer_to_float_array( rgba_buffer ):
-	float_array = numpy.empty( (rgba_buffer.shape[0], rgba_buffer.shape[1] ) );
-
-	for row in range( float_array.shape[0] ):
-		for column in range( float_array.shape[1] ):
-			if( rgba_buffer[row][column][0] == 0.0 and rgba_buffer[row][column][1] == 0.0 and rgba_buffer[row][column][2] == 0.0 and rgba_buffer[row][column][3] == 0.0 ):
-				float_array[row][column] = 0.0;
-			else:
-				sign = 1.0 - ( 0.0 if rgba_buffer[row][column][0] < 128.0 else 1.0 ) * 2.0;
-				exponent = 2.0 * ( rgba_buffer[row][column][0] % 128.0 ) + ( 0.0 if rgba_buffer[row][column][1] < 128.0 else 1.0 ) - 127.0;
-				mantissa = 1.0 + ( ( rgba_buffer[row][column][1] % 128.0 ) * math.pow( 2.0, 16.0 ) + rgba_buffer[row][column][2] * math.pow( 2.0, 8.0 ) + rgba_buffer[row][column][3] + 23.0 ) * math.pow( 2.0, -23.0 );
-
-				float_array[row][column] = sign * math.pow( 2.0, exponent ) * mantissa;
-
-	return float_array;
-
-def float_array_to_rgba_buffer1( float_array ):
-	rgba_buffer = numpy.empty( ( float_array.shape[0], float_array.shape[1], 4 ) );
-
-	for row in range( float_array.shape[0] ):
-		for column in range( float_array.shape[1] ):
-			f = abs( float_array[row][column] );
-			sign = 0.0 if float_array[row][column] > 0.0 else 1.0;
-			exponent = math.floor( math.log( f, 2.0 ) );
-			mantissa = math.pow( 2.0, - exponent ) * f;
-			
-			print( "Float:  " + str( float_array[row][column] ) );
-			print( "Sign:  " + str( sign) );
-			print( "Exponent:  " + str( exponent ) );
-			print( "Mantissa:  " + str( mantissa ) );
-
-			exponent = math.floor( math.log( f, 2.0 ) + 127.0 ) + math.floor( math.log( mantissa, 2.0 ) );
-
-			rgba_buffer[row][column][0] = 128.0 * sign + math.floor( exponent * math.pow( 2, -1.0 ) );
-			rgba_buffer[row][column][1] = 128.0 * ( exponent % 2.0 ) + math.floor( mantissa * 128.0 ) % 128.0;
-			rgba_buffer[row][column][2] = math.floor( math.floor( mantissa * math.pow( 2, 15.0) ) % math.pow( 2, 8.0 ) );
-			rgba_buffer[row][column][3] = math.floor( math.pow( 2, 23.0 ) * ( mantissa % math.pow( 2, -15.0 ) ) );
-
-	return rgba_buffer;
-
-def rgba_buffer_to_float_array1( rgba_buffer ):
-	float_array = numpy.empty( (rgba_buffer.shape[0], rgba_buffer.shape[1] ) );
-
-	for row in range( float_array.shape[0] ):
-		for column in range( float_array.shape[1] ):
-			sign = 1.0 - ( 0.0 if rgba_buffer[row][column][0] < 128.0 else 1.0 ) * 2.0;
-			exponent = 2.0 * ( rgba_buffer[row][column][0] % 128.0 ) + ( 0.0 if rgba_buffer[row][column][1] < 128.0 else 1.0 ) - 127.0;
-			mantissa = 1.0 + ( ( rgba_buffer[row][column][1] % 128.0 ) * math.pow( 2.0, 16.0 ) + rgba_buffer[row][column][2] * math.pow( 2.0, 8.0 ) + rgba_buffer[row][column][3] + 23.0 ) * math.pow( 2.0, -23.0 );
-
-			print( "Float:  " + str( float_array[row][column] ) );
-			print( "Sign:  " + str( sign) );
-			print( "Exponent:  " + str( exponent ) );
-			print( "Mantissa:  " + str( mantissa ) );
-
-			float_array[row][column] = sign * math.pow( 2.0, exponent ) * mantissa;
-
-	return float_array;
 
 def generate_float_array( width, height ):
-	float_array = numpy.empty( ( height, width ) );
-	max_distance = math.sqrt( math.pow( height / 2, 2 ) + math.pow( width / 2, 2 ) );
-
-	for row in range( height ):
-		for column in range( width ):
-			distance_from_center = math.sqrt( math.pow( row - ( height / 2 ), 2 ) + math.pow( column - ( width / 2 ), 2 ) );
-
-			float_array[row][column] = distance_from_center / max_distance;
-
-	return float_array;
-
-def generate_float_array1( width, height ):
-	float_array = numpy.empty( ( height, width ) );
-	max_distance = math.sqrt( math.pow( height / 2, 2 ) + math.pow( width / 2, 2 ) );
+	float_array = numpy.ndarray( ( height, width ) );
 
 	for row in range( height ):
 		for column in range( width ):
@@ -114,84 +14,136 @@ def generate_float_array1( width, height ):
 
 	return float_array;
 
-def generate_float_array2( width, height ):
-	float_array = numpy.empty( ( height, width ) );
-	for row in range( height ):
-		for column in range( width ):
-			float_array[row][column] = 1.0;
-	float_array[3][2] = float( '-inf' );
+def float_array_to_rgba_buffer( float_array ):
+	rgba_buffer = numpy.asarray( 
+		struct.unpack( 
+			'!%sB' % ( 4 * float_array.size ),
+			struct.pack( 
+				'!%sf' % float_array.size,
+				*float_array.flat
+			)
+		)
+	);
+
+	rgba_buffer = rgba_buffer.reshape( (float_array.shape[0], float_array.shape[1], 4 ) );
+
+	return rgba_buffer;
+
+def rgba_buffer_to_float_array( rgba_buffer ):
+	float_array = numpy.asarray(
+		struct.unpack( 
+			'!%sf' % ( rgba_buffer.size / 4 ), 
+			struct.pack( 
+				'!%sB' % rgba_buffer.size, 
+				*rgba_buffer.flat
+			)
+		)
+	);
+
+	float_array = float_array.reshape( rgba_buffer.shape[0], rgba_buffer.shape[1] );
 
 	return float_array;
 
-def read_float_array( file_name ):
-	file = open( file_name, "rb" );
+def write_png( file_name, rgba_buffer ):
+	image = Image.fromarray( numpy.uint8( rgba_buffer ) );
+	image.save( file_name, "PNG" );
 
-	if( not file.closed ):
-		width = struct.unpack( 'i', file.read( 4 ) )[0];
-		height = struct.unpack( 'i', file.read( 4 ) )[0];
-		
-		float_array = numpy.empty( ( height, width ) );
+def read_png( file_name ):
+	image = Image.open( file_name );
+	rgba_buffer = numpy.asarray( image );
+	return rgba_buffer;
 
-		for row in range( height ):
-			for column in range( width ):
-				float_array[row][column] = struct.unpack( 'f', file.read( 4 ) )[0];
-
-	return float_array;
-
-def write_float_array( file_name, float_array ):
-	file = open( file_name, "wb" );
-
-	if( not file.closed ):
-		# Write simple header for array dimensions
-
-		# Width
-		file.write( struct.pack( 'i', float_array.shape[1] ) );
-
-		# Height
-		file.write( struct.pack( 'i', float_array.shape[0] ) );
-
-		for value in numpy.nditer( float_array ):
-			file.write( struct.pack( 'f', value ) );
-
-		file.close();
-
+# Printing functions
 def print_float_array( float_array ):
+	print( "Printing Float Array:");
 	for row in range( float_array.shape[0] ):
 		for column in range( float_array.shape[1] ):
 			print( "%.2f" % float_array[row][column] ),;
-		print;
-	print;
+		print("");
+	print("");
 
 def print_rgba_buffer( rgba_buffer ):
+	print("Printing RGBA Buffer:");
 	for row in range( rgba_buffer.shape[0] ):
 		for column in range( rgba_buffer.shape[1] ):
 			print( "( " + "%.2f" % rgba_buffer[row][column][0] + ", " + "%.2f" % rgba_buffer[row][column][1] + ", " + "%.2f" % rgba_buffer[row][column][2] + ", " "%.2f" % rgba_buffer[row][column][3] + ")" ),;
-		print;
-	print;
+		print("");
+	print("");
 
 def main():
+	'''
+	 Float array to RGBA buffer conversion:
+
+	 1.  Create float array.
+	 2.  Convert float array to RGBA buffer.
+	 3.  Convert RGBA buffer back to float array.
+	 4.  Compare original float array to converted float array.
+
+	 '''
+
 	width = 7;
 	height = 5;
 
 	float_array_1 = generate_float_array( width, height );
 	print_float_array( float_array_1 );
-	write_float_array( "float_array_1.bin", float_array_1 );
 
-	float_array_2 = read_float_array( "float_array_1.bin" );
+	rgba_buffer_1 = float_array_to_rgba_buffer( float_array_1 );
+	print_rgba_buffer( rgba_buffer_1 );
+
+	float_array_2 = rgba_buffer_to_float_array( rgba_buffer_1 );
 	print_float_array( float_array_2 );
-	write_float_array( "float_array_2.bin", float_array_2 );
-	
-	rgba_buffer = float_array_to_rgba_buffer( float_array_2 );
-	print_rgba_buffer( rgba_buffer );
 
-	float_array_3 = rgba_buffer_to_float_array( rgba_buffer );
-	print_float_array( float_array_3 );
-	write_float_array( "float_array_3.bin", float_array_3 );
-
-	print( "float_array_1 ~ float_array_2:  " + str( numpy.allclose( float_array_1, float_array_2 ) ) );
-	print( "float_array_1 ~ float_array_3:  " + str( numpy.allclose( float_array_1, float_array_3 ) ) );
-	print( "float_array_2 ~ float_array_3:  " + str( numpy.allclose( float_array_2, float_array_3 ) ) );
+	# Testing standard floats
+	print( "float_array_1 ~ float_array_2:");
+	print( numpy.isclose( float_array_1, float_array_2 ) );
 	print("");
+
+	float_array_3 = generate_float_array( width, height );
+	float_array_3[0][0] = float( '-inf' );
+	rgba_buffer_2 = float_array_to_rgba_buffer( float_array_3 );
+	float_array_4 = rgba_buffer_to_float_array( rgba_buffer_2 );
+
+	# Testing float( 'inf' ):
+	print( "float_array_3 ~ float_array_4:" );
+	print( numpy.isclose( float_array_3, float_array_4 ) );
+	print("");
+
+	float_array_5 = generate_float_array( width, height );
+	float_array_5[0][0] = float( '-nan' );
+	rgba_buffer_3 = float_array_to_rgba_buffer( float_array_5 );
+	float_array_6 = rgba_buffer_to_float_array( rgba_buffer_3 );
+
+	# Testing float( 'nan' ):
+	print( "float_array_5 ~ float_array_6:");
+	print( numpy.isclose( float_array_5, float_array_6 ) );
+	print("");	
+
+	'''
+
+	PNG as float array interchange:
+	
+	 1.  Create float array.
+	 2.  Convert float array to RGBA buffer.
+	 3.  Write RGBA buffer to disk as .png.
+	 4.  Read back .png from disk as RGBA buffer.
+	 5.  Convert RGBA buffer to float array.
+	 6.  Compare converted float array to original float array
+
+	'''
+	file_name = "rgba_buffer_4.png"
+	width = 1024;
+	height = 512;
+
+	float_array_7 = generate_float_array( width, height );
+	rgba_buffer_4 = float_array_to_rgba_buffer( float_array_7 );
+	write_png( "rgba_buffer_4.png", rgba_buffer_4 );
+	rgba_buffer_5 = read_png( "rgba_buffer_4.png" );
+	float_array_8 = rgba_buffer_to_float_array( rgba_buffer_5 );
+
+	print( "float_array_7 ~ float_array_8:");
+	print( numpy.isclose( float_array_7, float_array_8 ) );
+	print("");	
+
 	print( "Have a nice day!  :)" );
 
 if __name__ == "__main__":
