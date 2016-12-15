@@ -130,12 +130,13 @@ def main():
 	 6.  Compare converted float array to original float array
 
 	'''
-	file_name = "rgba_buffer_4.png"
-	width = 1024;
-	height = 512;
+
+	width = 8;
+	height = 4;
 
 	float_array_7 = generate_float_array( width, height );
 	rgba_buffer_4 = float_array_to_rgba_buffer( float_array_7 );
+	print_rgba_buffer( rgba_buffer_4 );
 	write_png( "rgba_buffer_4.png", rgba_buffer_4 );
 	rgba_buffer_5 = read_png( "rgba_buffer_4.png" );
 	float_array_8 = rgba_buffer_to_float_array( rgba_buffer_5 );
@@ -143,8 +144,6 @@ def main():
 	print( "float_array_7 ~ float_array_8:");
 	print( numpy.isclose( float_array_7, float_array_8 ) );
 	print("");	
-
-	print( "Have a nice day!  :)" );
 
 if __name__ == "__main__":
 	main();
